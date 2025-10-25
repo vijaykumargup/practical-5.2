@@ -1,0 +1,111 @@
+
+// ============================================
+// Student Management System using MVC pattern
+// ============================================
+
+// Import dependencies
+const express = require('express');
+const mongoose = require('mongoose');
+
+// Initialize app
+const app = express();
+app.use(express.json());
+
+// -------------------------------
+// Database Connection (Model Layer)
+// -------------------------------
+mongoose.connect("mongodb+srv://<username>:<password>@<cluster>.mongodb.net/studentDB", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("? MongoDB Connected Successfully"))
+.catch(err => console.error("? Database connection failed:", err));
+
+// -------------------------------
+// Schema & Model (Model Layer)
+// -------------------------------
+const studentSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  rollNo: { type: Number, required: true, unique: true },
+  course: String,
+  marks: Number
+});
+
+const Student = mongoose.model("Student", studentSchema);
+
+// -------------------------------
+// Controller Functions (Controller Layer)
+// -------------------------------
+
+// Create Student
+async function createStudent(req, res) {
+  try {
+    const student = new Student(req.body);
+    await student.save();
+    res.status(201).json(student);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+}
+
+// Get All Students
+async function getStudents(req, res) {
+  try {
+    const students = await Student.find();
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// Get Student by ID
+async function getStudentById(req, res) {
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+    res.json(student);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// Update Student
+async function updateStudent(req, res) {
+  try {
+    const student = await Student.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!student) return res.status(404).json({ message: "Student not found" });
+    res.json(student);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+}
+
+// Delete Student
+async function deleteStudent(req, res) {
+  try {
+    const student = await Student.findByIdAndDelete(req.params.id);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+    res.json({ message: "Student deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// -------------------------------
+// Routes (Routing Layer)
+// -------------------------------
+app.get('/', (req, res) => {
+  res.send('?? Welcome to Student Management API (MVC Single File)');
+});
+
+app.post('/api/students', createStudent);
+app.get('/api/students', getStudents);
+app.get('/api/students/:id', getStudentById);
+app.put('/api/students/:id', updateStudent);
+app.delete('/api/students/:id', deleteStudent);
+
+// -------------------------------
+// Start Server
+// -------------------------------
+const PORT = 3000;
+app.listen(PORT, () => console.log(`?? Server running on port ${PORT}`));
